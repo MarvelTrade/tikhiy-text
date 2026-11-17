@@ -1,0 +1,55 @@
+name: Build Windows Raschifrovshik (.exe)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'windows/**'
+      - '.github/workflows/build-windows.yml'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install PySide6 pyinstaller
+
+      - name: Download whisper-cli.exe and ffmpeg.exe
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path windows/bin
+          Invoke-WebRequest -Uri "https://github.com/ggml-org/whisper.cpp/releases/latest/download/whisper-bin-x64.zip" -OutFile "whisper.zip"
+          Expand-Archive -Path "whisper.zip" -DestinationPath "whisper_tmp" -Force
+          Get-ChildItem -Path "whisper_tmp" -Recurse -Include "whisper-cli.exe","*.dll" | Copy-Item -Destination "windows/bin/"
+          Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" -OutFile "ffmpeg.zip"
+          Expand-Archive -Path "ffmpeg.zip" -DestinationPath "ffmpeg_tmp" -Force
+          $ffmpegExe = Get-ChildItem -Path "ffmpeg_tmp" -Recurse -Filter "ffmpeg.exe" | Select-Object -First 1
+          Copy-Item $ffmpegExe.FullName -Destination "windows/bin/ffmpeg.exe"
+
+      - name: Build Raschifrovshik-Windows.exe with PyInstaller
+        shell: pwsh
+        run: |
+          pyinstaller --noconfirm --onefile --windowed --name "Raschifrovshik-Windows" `
+            --add-binary "windows/bin/*;bin" `
+            windows/transcriber_win.py
+
+      - name: Upload to GitHub Release v1.0.0
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.0
+          files: dist/Raschifrovshik-Windows.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
