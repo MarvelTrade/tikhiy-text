@@ -31,7 +31,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path windows/bin
-          Invoke-WebRequest -Uri "https://github.com/ggml-org/whisper.cpp/releases/latest/download/whisper-bin-x64.zip" -OutFile "whisper.zip"
+          Invoke-WebRequest -Uri "https://github.com/ggml-org/whisper.cpp/releases/download/b5454/whisper-bin-x64.zip" -OutFile "whisper.zip"
           Expand-Archive -Path "whisper.zip" -DestinationPath "whisper_tmp" -Force
           Get-ChildItem -Path "whisper_tmp" -Recurse -Include "whisper-cli.exe","*.dll" | Copy-Item -Destination "windows/bin/"
           Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" -OutFile "ffmpeg.zip"
